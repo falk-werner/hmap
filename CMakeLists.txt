@@ -2,7 +2,7 @@
 # Copyright (c) 2022 Falk Werner
 
 cmake_minimum_required (VERSION 3.10)
-project(hashmap VERSION 1.0.0)
+project(hashmap VERSION 2.0.0)
 
 
 option(WITHOUT_TESTS   "disable unit tests"   OFF)
