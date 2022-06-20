@@ -11,8 +11,13 @@ option(WITHOUT_TESTS   "disable unit tests"   OFF)
 set(CMAKE_C_STANDARD 99)
 
 
-add_library(hmap STATIC src/hmap/hmap.c)
+add_library(hmap STATIC 
+    src/hmap/hmap.c
+    src/hmap/smap.c
+    src/hmap/djb2.c
+)
 target_include_directories(hmap PUBLIC include)
+target_include_directories(hmap PRIVATE src)
 
 file(WRITE "${PROJECT_BINARY_DIR}/hmap.pc"
 "prefix=\"${CMAKE_INSTALL_PREFIX}\"
@@ -37,7 +42,10 @@ if(NOT WITHOUT_TESTS)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTEST REQUIRED gtest_main)
 
-add_executable(alltests test-src/test_hmap.cpp)
+add_executable(alltests
+    test-src/test_hmap.cpp
+    test-src/test_smap.cpp
+)
 target_include_directories(alltests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_libraries(alltests PUBLIC hmap ${GTEST_LIBRARIES})
 
