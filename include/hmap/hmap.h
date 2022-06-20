@@ -24,8 +24,9 @@ typedef void hmap_release_fn(void * item);
 /// Computes the hash of a given key.
 ///
 /// \param key Key to hash.
+/// \param seed Seed to use for hash ransomization.
 /// \return Hash value of \arg key.
-typedef size_t hmap_hash_fn(void const * key);
+typedef size_t hmap_hash_fn(void const * key, size_t seed);
 
 /// Return 0 if two key are equal.
 ///
@@ -49,21 +50,15 @@ struct hmap_iter
     struct hmap_entry * end;        ///< Pointer to the last entry in the Hashmap; do not use
 };
 
-/// Sets the global seed of the Hashmap.
-///
-/// For security reasons, a global seed is used to randomize hash values.
-/// The seed should be set once before any Hashmap is used.
-///
-/// \param seed Global seed of the Hashmap.
-extern void hmap_seed(size_t seed);
-
 /// Creates a new empty Hashmap.
 ///
+/// \param seed          Seed of the hash function.
 /// \param hash          Hash function.
 /// \param equals        Determines, whether two keys are equal.
 /// \param release_key   Used to release keys.
 /// \param release_value User to release values.
 extern struct hmap * hmap_create(
+    size_t seed,
     hmap_hash_fn * hash,
     hmap_equals_fn * equals,
     hmap_release_fn * release_key,

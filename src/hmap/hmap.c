@@ -20,30 +20,24 @@ struct hmap_bucket
 
 struct hmap
 {
+    size_t seed;
     hmap_hash_fn * hash;
     hmap_equals_fn * equals;
     hmap_release_fn * release_key;
     hmap_release_fn * releae_value;
 
+    size_t entry_count;
     size_t bucket_count;
     struct hmap_bucket * buckets;
-
-    size_t entry_count;
 };
 
-static size_t hmap_g_seed = 0;
-
-static size_t hmap_getbucketid(size_t hash, size_t bucket_count)
-{
-    return (hash + hmap_g_seed) % bucket_count;
-}
 
 static struct hmap_bucket * hmap_getbucket(
     struct hmap * map,
     void const * key)
 {
-    size_t hash = map->hash(key);
-    size_t bucket_id = hmap_getbucketid(hash, map->bucket_count);
+    size_t hash = map->hash(key, map->seed);
+    size_t bucket_id = hash % map->bucket_count;
     return &(map->buckets[bucket_id]);
 }
 
@@ -73,8 +67,8 @@ static void hmap_rehash(struct hmap * map)
         {
             struct hmap_entry * next = entry->next;
 
-            size_t hash = map->hash(entry->key);
-            size_t new_bucket_id = hmap_getbucketid(hash, new_bucket_count);
+            size_t hash = map->hash(entry->key, map->seed);
+            size_t new_bucket_id = hash % new_bucket_count;
             struct hmap_bucket * new_bucket = &(new_buckets[new_bucket_id]);
 
             entry->next = new_bucket->head.next;
@@ -92,6 +86,7 @@ static void hmap_rehash(struct hmap * map)
 }
 
 struct hmap * hmap_create(
+    size_t seed,
     hmap_hash_fn * hash,
     hmap_equals_fn * equals,
     hmap_release_fn * release_key,
@@ -99,6 +94,7 @@ struct hmap * hmap_create(
 )
 {
     struct hmap * map = malloc(sizeof(struct hmap));
+    map->seed = seed;
     map->hash = hash;
     map->equals = equals;
     map->release_key = release_key;

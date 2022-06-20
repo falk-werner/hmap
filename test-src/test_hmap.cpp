@@ -7,8 +7,9 @@
 namespace
 {
 
-size_t string_hash(void const * item)
+size_t string_hash(void const * item, size_t seed)
 {
+    (void) seed;
     char const * value = reinterpret_cast<char const *>(item);
     size_t result = 0;
 
@@ -31,7 +32,7 @@ int string_equals(void const * value, void const * other)
 
 TEST(hmap, create)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
     ASSERT_NE(nullptr,  map);
     hmap_release(map);
 }
@@ -40,7 +41,7 @@ TEST(hmap, create)
 
 TEST(hmap, add)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     hmap_add(map, strdup("key"), strdup("value"));
     char const * value = reinterpret_cast<char const *>(hmap_get(map, reinterpret_cast<void const*>("key")));
@@ -54,7 +55,7 @@ TEST(hmap, add)
 
 TEST(hmap, addsamekey)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     hmap_add(map, strdup("key"), strdup("value"));
     hmap_add(map, strdup("key"), strdup("other"));
@@ -69,7 +70,7 @@ TEST(hmap, addsamekey)
 
 TEST(hmap, getempty)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     char const * value = reinterpret_cast<char const *>(hmap_get(map, "key"));
     ASSERT_EQ(nullptr, value);
@@ -80,7 +81,7 @@ TEST(hmap, getempty)
 
 TEST(hmap, contains)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     bool is_contained = hmap_contains(map, "key");
     ASSERT_FALSE(is_contained);
@@ -95,7 +96,7 @@ TEST(hmap, contains)
 
 TEST(hmap, remove)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     hmap_add(map, strdup("key"), strdup("value"));
     bool is_contained = hmap_contains(map, "key");
@@ -110,7 +111,7 @@ TEST(hmap, remove)
 
 TEST(hmap, rehash)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
     size_t count = 128;
 
     // add some item to hashmap to trigger rehash
@@ -139,7 +140,7 @@ TEST(hmap, rehash)
 
 TEST(hmap, iter_empty)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     struct hmap_iter iter;
     hmap_iter_init(&iter, map);
@@ -153,7 +154,7 @@ TEST(hmap, iter_empty)
 
 TEST(hmap, iter_some)
 {
-    struct hmap * map = hmap_create(&string_hash, &string_equals, &free, &free);
+    struct hmap * map = hmap_create(0, &string_hash, &string_equals, &free, &free);
 
     hmap_add(map, strdup("1"), strdup("A"));
     hmap_add(map, strdup("2"), strdup("B"));
