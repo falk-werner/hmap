@@ -40,6 +40,49 @@ smap_getbucket(
     return &(map->buckets[bucket_id]);
 }
 
+static size_t smap_getthreshold(size_t bucket_count)
+{
+    return (7 * bucket_count) / 10;
+}
+
+static void smap_rehash(struct smap * map)
+{
+    // create new buckets
+    size_t new_bucket_count = 2 * map->bucket_count;
+    struct smap_bucket * new_buckets = malloc(new_bucket_count * sizeof(struct smap_bucket));
+    for(size_t i = 0; i < new_bucket_count; i++)
+    {
+        struct smap_bucket * new_bucket = &(new_buckets[i]);
+        new_bucket->head.next = &(new_bucket->head);
+    }
+
+    // put entries into new buckets
+    for (size_t i = 0; i < map->bucket_count; i++)    
+    {
+        struct smap_bucket * old_bucket = &(map->buckets[i]);
+        struct smap_entry * entry = old_bucket->head.next;
+        while (&(old_bucket->head) != entry)
+        {
+            struct smap_entry * next = entry->next;
+
+            size_t hash = smap_djb2(entry->key, map->seed);
+            size_t new_bucket_id = hash % new_bucket_count;
+            struct smap_bucket * new_bucket = &(new_buckets[new_bucket_id]);
+
+            entry->next = new_bucket->head.next;
+            new_bucket->head.next = entry;
+
+            entry = next;
+        }
+    }
+
+    // update map to use new buckets
+    free(map->buckets);
+    map->bucket_count = new_bucket_count;
+    map->buckets = new_buckets;
+}
+
+
 struct smap * smap_create(
     size_t seed,
     smap_release_fn * release_value)
@@ -87,6 +130,11 @@ void smap_add(
     char const * key,
     void * value)
 {
+    if (map->entry_count > smap_getthreshold(map->bucket_count))
+    {
+        smap_rehash(map);
+    }
+
     struct smap_bucket * bucket = smap_getbucket(map, key);
 
     bool found = false;
@@ -172,4 +220,58 @@ void smap_remove(
         prev = entry;
         entry = entry->next;
     }
+}
+
+void smap_iter_init(
+    struct smap_iter * iter,
+    struct smap * map)
+{
+    iter->map = map;
+    iter->bucket_id = -1;
+    iter->entry = NULL;
+}
+
+bool smap_iter_next(
+    struct smap_iter * iter)
+{
+    if (NULL == iter->entry)
+    {
+        iter->bucket_id = 0;
+        iter->entry = iter->map->buckets[0].head.next;
+    }
+    else
+    {
+        struct smap_entry * bucket_end = &(iter->map->buckets[iter->bucket_id].head);
+        if (iter->entry != bucket_end)
+        {
+            iter->entry = iter->entry->next;
+        }
+    }
+
+    struct smap_entry * bucket_end = &(iter->map->buckets[iter->bucket_id].head);
+    struct smap_entry * end = &(iter->map->buckets[iter->map->bucket_count - 1].head);
+    while ((iter->entry != end) && (iter->entry == bucket_end))
+    {
+        iter->bucket_id++;
+        iter->entry = iter->map->buckets[iter->bucket_id].head.next;
+        bucket_end = &(iter->map->buckets[iter->bucket_id].head);
+    }
+
+    return (end != iter->entry);
+}
+
+char const * smap_iter_key(
+    struct smap_iter * iter)
+{
+    struct smap_entry * end = &(iter->map->buckets[iter->map->bucket_count - 1].head);
+    char const * key = ((NULL != iter->entry) && (iter->entry != end)) ? iter->entry->key : NULL;
+    return key;
+}
+
+void const * smap_iter_value(
+    struct smap_iter * iter)
+{
+    struct smap_entry * end = &(iter->map->buckets[iter->map->bucket_count - 1].head);
+    void const * value = ((NULL != iter->entry) && (iter->entry != end)) ? iter->entry->value : NULL;
+    return value;
 }

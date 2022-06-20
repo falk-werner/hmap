@@ -113,7 +113,7 @@ TEST(smap, rehash)
     smap_release(map);
 }
 
-/*
+
 TEST(smap, iter_empty)
 {
     struct smap * map = smap_create(0, &free);
@@ -136,7 +136,7 @@ TEST(smap, iter_some)
     smap_add(map, "2", strdup("B"));
     smap_add(map, "3", strdup("C"));
 
-    struct hmap_iter iter;
+    struct smap_iter iter;
     smap_iter_init(&iter, map);
     
     size_t count = 0;
@@ -171,4 +171,3 @@ TEST(smap, iter_some)
 
     smap_release(map);
 }
-*/
